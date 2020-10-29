@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  slack: circleci/slack@4.1.1
+
 jobs:
   build-frontend:
     docker:
@@ -86,7 +89,13 @@ jobs:
           name: run backend security scan
           command: |
             cd backend
+            # include next line after generating screenshot 4
+            # npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
+      - slack/notify:
+          channel: circleci_notification
+          event: fail
+          template: basic_fail_1
 
 workflows:
   default:
