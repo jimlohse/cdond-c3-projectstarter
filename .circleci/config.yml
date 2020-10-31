@@ -90,8 +90,8 @@ jobs:
           command: |
             cd backend
             # include next line after generating screenshot 4
-            # npm audit fix --audit-level=critical --force
-            npm audit --audit-level=critical
+            npm audit fix --audit-level=critical --force
+            # npm audit --audit-level=critical
       - slack/notify:
           channel: circleci_notification
           event: fail
