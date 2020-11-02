@@ -135,11 +135,11 @@ jobs:
             - project/.circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure
       - run:
-        name: on failure delete stacks that were created
-        command: >
-          aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
-          aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
-        when: on_fail
+          name: on failure delete stacks that were created
+          command: >
+            aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
+          when: on_fail
 
   configure-infrastructure:
     docker:
@@ -151,12 +151,16 @@ jobs:
             - "00:31:ee:87:23:d8:65:e0:80:39:73:0e:ab:0e:98:d8"
       - attach_workspace:
           at: ~/
-      -- run:
+      - run:
           name: install dependencies
           command: apk add --update ansible
       - run:
           name: configure server on AWS
-          command: ansible-playbook -i project/.circleci/ansible/inventory.txt project/.circleci/ansible/configure-server.yml
+          command: >
+            ansible-playbook -i project/.circleci/ansible/inventory.txt project/.circleci/ansible/configure-server.yml
+            --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
+            --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
+            --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
       # Here's where you will add some code to rollback on failure
 
 workflows:

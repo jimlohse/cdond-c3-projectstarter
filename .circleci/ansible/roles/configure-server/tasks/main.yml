@@ -4,16 +4,23 @@
   apt:
     update_cache: yes
 
-- name: "upgrade packages"
-  become: yes
-  apt:
-    upgrade: yes
+# - name: "upgrade packages"
+#   become: yes
+#   apt:
+#     upgrade: yes
 
 - name: "install nodejs"
   become: yes
   apt:
     name: "nodejs"
-    state: latest
+    state: present
+    update_cache: yes
+
+- name: "install npm"
+  become: yes
+  apt:
+    name: "npm"
+    state: present
     update_cache: yes
 
 - name: "install pm2"
@@ -22,16 +29,22 @@
     name: pm2
     global: yes
     state: present # https://stackoverflow.com/questions/35439934/ansible-how-to-run-node-js-application-through-pm2
+#
+# - name: "copy index.js file"
+#   copy:
+#     src: index.js
+#     dest: .
+#     backup: yes
 
-- name: "copy index.js file"
-  copy:
-    src: index.js
-    dest: .
-    backup: yes
+# - name: "run index.js file"
+#   shell: node index.js &
+#  register: print_result
 
-- name: "run index.js file"
-  shell: node index.js &
-  register: print_result
+- name: set node to run on port 80
+  become: yes
+  command: setcap cap_net_bind_service=+ep /usr/bin/node
+
+  
 
 - name: print message
   debug:
