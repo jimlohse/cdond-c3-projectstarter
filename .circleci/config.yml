@@ -108,6 +108,10 @@ jobs:
           channel: circleci_notification
           event: fail
           template: basic_fail_1
+      - save_cache:
+          paths:
+            - backend/node_modules
+          key: backend-build
 
   deploy-infrastructure:
     docker:
@@ -123,8 +127,8 @@ jobs:
             aws cloudformation deploy
             --template-file .circleci/files/backend.yml
             --tags Project="uda-back-end"
-            --stack-name jims-back-end-{${CIRCLE_WORKFLOW_ID:0:7},,}
-            --parameter-overrides ID=jimsID-{${CIRCLE_WORKFLOW_ID:0:7},,}
+            --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+            --parameter-overrides ID=jimsID-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Ensure front-end infrastructure exists
           command: >
