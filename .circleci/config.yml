@@ -199,23 +199,23 @@ jobs:
             npm install
             npm run build
             npm run migrations > mig-out
-      - run:
-          name: Send migration results to memstash
-          command: |
-            if grep "has been executed successfully" mig-out
-            then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
-            else exit 1
-            fi
-      - run:
-          name: rollback after failed migration
-          command: |
-            cd backend
-            npm run migrations:revert
-          when: on_fail
-      - save_cache:
-          paths:
-            - backend/node_modules
-          key: backend-build
+      # - run:
+      #     name: Send migration results to memstash
+      #     command: |
+      #       if grep "has been executed successfully" mig-out
+      #       then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
+      #       else exit 1
+      #       fi
+      # - run:
+      #     name: rollback after failed migration
+      #     command: |
+      #       cd backend
+      #       npm run migrations:revert
+      #     when: on_fail
+      # - save_cache:
+      #     paths:
+      #       - backend/node_modules
+      #     key: backend-build
 
   deploy-frontend:
     docker:
