@@ -40,13 +40,13 @@
 #   shell: node index.js &
 #  register: print_result
 
-- name: set node to run on port 80
+# - name: print message
+#   debug:
+#     msg: "{{ print_result.stdout_lines }}"
+
+- name: set node to run on port 80, make sure AWS security group allows it
   become: yes
   command: setcap cap_net_bind_service=+ep /usr/bin/node
 
-  
 
-- name: print message
-  debug:
-    msg: "{{ print_result.stdout_lines }}"
 

@@ -10,7 +10,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-build]
+          keys:
+            - frontend-build
       - run:
           name: Build front-end
           command: |
@@ -18,7 +19,8 @@ jobs:
             npm i
             npm run build
       - save_cache:
-          paths: [frontend/node_modules]
+          paths:
+            - frontend/node_modules
           key: frontend-build
       - run:
           name: stop job
@@ -30,7 +32,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys:
+            - backend-build
       - run:
           name: Back-end build
           command: |
@@ -38,7 +41,8 @@ jobs:
             npm i
             npm run build
       - save_cache:
-          paths: [backend/node_modules]
+          paths:
+            - backend/node_modules
           key: backend-build
 
   test-frontend:
@@ -47,7 +51,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-build]
+          keys:
+            - frontend-build
       - run:
           name: run frontend tests
           command: |
@@ -61,7 +66,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys:
+            - backend-build
       - run:
           name: run backend tests
           command: |
@@ -113,7 +119,7 @@ jobs:
           command: >
             aws cloudformation deploy
             --template-file .circleci/files/backend.yml
-            --tags Project="udapeople"
+            --tags Project="uda-back-end"
             --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
             --parameter-overrides ID="jimsID-${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
@@ -121,25 +127,28 @@ jobs:
           command: >
             aws cloudformation deploy
             --template-file .circleci/files/frontend.yml
-            --tags Project=frontend
+            --tags Project="uda-front-end"
             --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
             --parameter-overrides ID="jimsID-${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
-          name: Add back-end ip to ansible inventory
+          name: Add back-end ip to ansible inventory and save to AWS_IP file for later
           command: |
             echo '[web]' > project/.circleci/ansible/inventory.txt
-            aws ec2 describe-instances --filter "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress]" --output=text >> project/.circleci/ansible/inventory.txt
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure
+            export AWS_IP=`aws ec2 describe-instances --filter "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress]" --output=text`
+            echo $AWS_IP >> project/.circleci/ansible/inventory.txt
+            echo $AWS_IP > project/AWS_IP
       - run:
           name: on failure delete stacks that were created
           command: >
             aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
+            exit 1
           when: on_fail
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/AWS_IP
+            - project/.circleci/ansible/inventory.txt
 
   configure-infrastructure:
     docker:
@@ -148,7 +157,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "00:31:ee:87:23:d8:65:e0:80:39:73:0e:ab:0e:98:d8"
+            - "23:ce:01:06:e8:33:69:d8:1b:8d:5d:31:5f:70:a0:08"
       - attach_workspace:
           at: ~/
       - run:
@@ -161,6 +170,62 @@ jobs:
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
+      - run:
+          name: on failure delete stacks that were created
+          command: >
+            aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
+          when: on_fail
+
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run:
+          name: Run migrations
+          command: |
+            npm run migrations > mig-out
+      - run:
+          name: Send migration results to memstash
+          command: |
+            if grep "has been executed successfully" mig-out
+            then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
+            else exit 1
+            fi
+      - run:
+          name: rollback after failed migration
+          command: npm run migrations:revert
+          when: on_fail
+
+  deploy-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run:
+          name: install aws cli 
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
+          name: Install dependencies
+          command: |
+            npm i
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP=`cat project/AWS_IP`
+            export API_URL="http://${BACKEND_IP}"
+            echo "API URL is ${API_URL}"
+      - run:
+          name: Deploy frontend objects
+          command: |
+            npm build # "bakes" the API_URL into the build, supposedly
+            # your code here
       # Here's where you will add some code to rollback on failure
 
 workflows:
@@ -192,3 +257,9 @@ workflows:
       - configure-infrastructure:
           requires:
             - deploy-infrastructure
+      - run-migrations:
+          requires:
+            - configure-infrastructure
+      - deploy-frontend:
+          requires:
+            - run-migrations
