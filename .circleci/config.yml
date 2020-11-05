@@ -140,10 +140,10 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory and save to AWS_IP file for later
           command: |
-            echo '[web]' > project/.circleci/ansible/inventory.txt
+            echo '[web]' > .circleci/ansible/inventory.txt
             export AWS_IP=`aws ec2 describe-instances --filter "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress]" --output=text`
-            echo $AWS_IP >> project/.circleci/ansible/inventory.txt
-            echo $AWS_IP > project/AWS_IP
+            echo $AWS_IP >> .circleci/ansible/inventory.txt
+            echo $AWS_IP > AWS_IP
       # - run:
           # name: on failure delete stacks that were created
           # command: >
@@ -154,8 +154,8 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/AWS_IP
-            - project/.circleci/ansible/inventory.txt
+            - AWS_IP
+            - .circleci/ansible/inventory.txt
 
   configure-infrastructure:
     docker:
@@ -173,7 +173,7 @@ jobs:
       - run:
           name: configure server on AWS
           command: >
-            ansible-playbook -i project/.circleci/ansible/inventory.txt project/.circleci/ansible/configure-server.yml
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
@@ -232,7 +232,7 @@ jobs:
           name: Deploy frontend objects
           command: |
             npm run build # "bakes" the API_URL into the build, supposedly
-            aws s3 cp project/frontend/dist s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
+            aws s3 cp frontend/dist s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
       # add some code to rollback on failure
 
   deploy-backend:
@@ -252,16 +252,16 @@ jobs:
       - run:
           name: get API_URL as env var
           command: |
-            export BACKEND_IP=`cat project/AWS_IP`
+            export BACKEND_IP=`cat AWS_IP`
       - run:
           name: copy backend dist to EC2 instance
           command: |
-            ssh ubuntu@${BACKEND_IP} 'mkdir -p project/backend/dist'
-            scp -r project/backend/dist ubuntu@${BACKEND_IP}:~/
+            ssh ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
+            scp -r backend/dist ubuntu@${BACKEND_IP}:~/
       - run:
           name: Deploy backend
           command: >
-            ansible-playbook -i project/.circleci/ansible/inventory.txt project/.circleci/ansible/deploy-backend.yml
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE, "BACKEND_IP":$BACKEND_IP}'
