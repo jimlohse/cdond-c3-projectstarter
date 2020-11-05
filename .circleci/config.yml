@@ -192,6 +192,7 @@ jobs:
       - run:
           name: Run migrations
           command: |
+            cd backend
             npm run migrations > mig-out
       - run:
           name: Send migration results to memstash
