@@ -44,6 +44,9 @@ jobs:
           paths:
             - backend/node_modules
           key: backend-build
+      - run:
+          name: stop job
+          command: exit 1
 
   test-frontend:
     docker:
