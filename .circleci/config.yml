@@ -189,6 +189,9 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - restore_cache:
+          keys: |
+            backend-build
       - run:
           name: Run migrations
           command: |
@@ -203,8 +206,14 @@ jobs:
             fi
       - run:
           name: rollback after failed migration
-          command: npm run migrations:revert
+          command: |
+            cd backend
+            npm run migrations:revert
           when: on_fail
+      - save_cache:
+          paths:
+            - backend/node_modules
+          key: backend-build
 
   deploy-frontend:
     docker:
