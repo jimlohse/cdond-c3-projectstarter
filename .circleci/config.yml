@@ -135,8 +135,8 @@ jobs:
             aws cloudformation deploy
             --template-file .circleci/files/frontend.yml
             --tags Project="uda-front-end"
-            --stack-name jims-front-end-{${CIRCLE_WORKFLOW_ID:0:7},,}
-            --parameter-overrides ID=jimsID-{${CIRCLE_WORKFLOW_ID:0:7},,}
+            --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
+            --parameter-overrides ID=jimsID-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Add back-end ip to ansible inventory and save to AWS_IP file for later
           command: |
@@ -147,8 +147,8 @@ jobs:
       # - run:
           # name: on failure delete stacks that were created
           # command: >
-          #   aws cloudformation delete-stack --stack-name "jims-back-end-{${CIRCLE_WORKFLOW_ID:0:7},,}"
-          #   aws cloudformation delete-stack --stack-name "jims-front-end-{${CIRCLE_WORKFLOW_ID:0:7},,}"
+          #   aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+          #   aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
           #   exit 1
           # when: on_fail
       - persist_to_workspace:
@@ -180,8 +180,8 @@ jobs:
       # - run:
       #     name: on failure delete stacks that were created
       #     command: >
-      #       aws cloudformation delete-stack --stack-name "jims-back-end-{${CIRCLE_WORKFLOW_ID:0:7},,}"
-      #       aws cloudformation delete-stack --stack-name "jims-front-end-{${CIRCLE_WORKFLOW_ID:0:7},,}"
+      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
       #     when: on_fail
 
   run-migrations:
@@ -197,7 +197,7 @@ jobs:
           name: Send migration results to memstash
           command: |
             if grep "has been executed successfully" mig-out
-            then curl -H "Content-Type: text/plain" -H "token: jimgrate-{${CIRCLE_WORKFLOW_ID:0:7},,}" --request PUT --data "succeeded" https://api.memstash.io/values/key
+            then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
             else exit 1
             fi
       - run:
@@ -232,7 +232,7 @@ jobs:
           name: Deploy frontend objects
           command: |
             npm run build # "bakes" the API_URL into the build, supposedly
-            aws s3 cp project/frontend/dist s3://udapeople-jimsID-{${CIRCLE_WORKFLOW_ID:0:7},,} --recursive --acl public-read
+            aws s3 cp project/frontend/dist s3://udapeople-jimsID-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
       # add some code to rollback on failure
 
   deploy-backend:
