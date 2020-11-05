@@ -1,0 +1,8 @@
+---
+
+- name: start pm2 for project/backend/dist/main.js
+  become: no
+  command: pm2-runtime project/backend/dist/main.js
+
+
+

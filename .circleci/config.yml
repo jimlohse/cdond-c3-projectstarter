@@ -22,9 +22,9 @@ jobs:
           paths:
             - frontend/node_modules
           key: frontend-build
-      - run:
-          name: stop job
-          command: exit 1
+      # - run:
+      #     name: stop job
+      #     command: exit 1
 
   build-backend:
     docker:
@@ -44,9 +44,9 @@ jobs:
           paths:
             - backend/node_modules
           key: backend-build
-      - run:
-          name: stop job
-          command: exit 1
+      # - run:
+      #     name: stop job
+      #     command: exit 1
 
   test-frontend:
     docker:
@@ -141,12 +141,12 @@ jobs:
             echo $AWS_IP >> project/.circleci/ansible/inventory.txt
             echo $AWS_IP > project/AWS_IP
       - run:
-          name: on failure delete stacks that were created
-          command: >
-            aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
-            aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
-            exit 1
-          when: on_fail
+          # name: on failure delete stacks that were created
+          # command: >
+          #   aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
+          #   aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
+          #   exit 1
+          # when: on_fail
       - persist_to_workspace:
           root: ~/
           paths:
@@ -173,12 +173,12 @@ jobs:
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
-      - run:
-          name: on failure delete stacks that were created
-          command: >
-            aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
-            aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
-          when: on_fail
+      # - run:
+      #     name: on failure delete stacks that were created
+      #     command: >
+      #       aws cloudformation delete-stack --stack-name "jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}"
+      #       aws cloudformation delete-stack --stack-name "jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}"
+      #     when: on_fail
 
   run-migrations:
     docker:
@@ -223,12 +223,44 @@ jobs:
           command: |
             export BACKEND_IP=`cat project/AWS_IP`
             export API_URL="http://${BACKEND_IP}"
-            echo "API URL is ${API_URL}"
+            echo "API_URL is ${API_URL}"
       - run:
           name: Deploy frontend objects
           command: |
-            npm build # "bakes" the API_URL into the build, supposedly
-            # your code here
+            npm run build # "bakes" the API_URL into the build, supposedly
+            aws s3 cp project/frontend/dist s3://udapeople-jimsID-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
+      # add some code to rollback on failure
+
+  deploy-backend:
+    docker:
+      - image: python:3.8.6-alpine3.12
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "23:ce:01:06:e8:33:69:d8:1b:8d:5d:31:5f:70:a0:08"
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            npm i
+      - run:
+          name: get API_URL as env var
+          command: |
+            export BACKEND_IP=`cat project/AWS_IP`
+      - run:
+          name: copy backend dist to EC2 instance
+          command: |
+            ssh ubuntu@${BACKEND_IP} 'mkdir -p project/backend/dist'
+            scp -r project/backend/dist ubuntu@${BACKEND_IP}:~/
+      - run:
+          name: Deploy backend
+          command: >
+            ansible-playbook -i project/.circleci/ansible/inventory.txt project/.circleci/ansible/deploy-backend.yml
+            --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
+            --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
+            --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE, "BACKEND_IP":$BACKEND_IP}'
       # Here's where you will add some code to rollback on failure
 
 workflows:
@@ -264,5 +296,8 @@ workflows:
           requires:
             - configure-infrastructure
       - deploy-frontend:
+          requires:
+            - run-migrations
+      - deploy-backend:
           requires:
             - run-migrations
