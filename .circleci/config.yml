@@ -43,7 +43,8 @@ jobs:
       - save_cache:
           paths:
             - backend/node_modules
-          key: backend-build
+          key: |
+            backend-build
       # - run:
       #     name: stop job
       #     command: exit 1
@@ -96,7 +97,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [backend-build]
+          keys: |
+            backend-build
       - run:
           name: run backend security scan
           command: |
