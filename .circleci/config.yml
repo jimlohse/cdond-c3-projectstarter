@@ -67,10 +67,11 @@ jobs:
       - run:
           name: test if AWS_IP file is there
           command: |
+            cd backend
             echo "AWS IP file contains..."
-            cat AWS_IP
+            cat ../AWS_IP
             echo "inventory file contains..."
-            cat .circleci/ansible/inventory.txt
+            cat ../.circleci/ansible/inventory.txt
       # - restore_cache:
       #     keys:
       #       - frontend-build
@@ -180,8 +181,8 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - ./AWS_IP
-            - ./.circleci/ansible/inventory.txt
+            - project/AWS_IP
+            - project/.circleci/ansible/inventory.txt
 
   configure-infrastructure:
     docker:
