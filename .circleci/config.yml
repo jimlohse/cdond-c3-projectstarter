@@ -30,9 +30,9 @@ jobs:
           paths:
             - frontend/node_modules
           key: frontend-build
-      - run:
-          name: stop job
-          command: exit 1
+      # - run:
+      #     name: stop job
+      #     command: exit 1
 
   build-backend:
     docker:
