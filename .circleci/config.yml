@@ -84,7 +84,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: [frontend-build]
+          keys: 
+            - frontend-build
       - run:
           name: run frontend security scan
           command: |
@@ -97,8 +98,8 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          keys: |
-            backend-build
+          keys:
+            - backend-build
       - run:
           name: run backend security scan
           command: |
@@ -132,6 +133,12 @@ jobs:
             --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
             --parameter-overrides ID=jims-id-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
+          name: on failure delete stacks that were created
+          command: |
+            aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+            exit 1
+          when: on_fail
+      - run:
           name: Ensure front-end infrastructure exists
           command: >
             aws cloudformation deploy
@@ -140,24 +147,24 @@ jobs:
             --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
             --parameter-overrides ID=jims-id-${CIRCLE_WORKFLOW_ID:0:7}
       - run:
+          name: on failure delete stacks that were created
+          command: |
+            aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
+            exit 1
+          when: on_fail
+      - run:
           name: Add back-end ip to ansible inventory and save to AWS_IP file for later
           command: |
             echo '[web]' > .circleci/ansible/inventory.txt
             export AWS_IP=`aws ec2 describe-instances --filter "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress]" --output=text`
+            echo "AWS_IP is $AWS_IP"
             echo $AWS_IP >> .circleci/ansible/inventory.txt
             echo $AWS_IP > AWS_IP
-      # - run:
-          # name: on failure delete stacks that were created
-          # command: >
-          #   aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
-          #   aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
-          #   exit 1
-          # when: on_fail
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/AWS_IP
-            - project/.circleci/ansible/inventory.txt
+            - AWS_IP
+            - .circleci/ansible/inventory.txt
 
   configure-infrastructure:
     docker:
@@ -181,7 +188,7 @@ jobs:
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
       # - run:
       #     name: on failure delete stacks that were created
-      #     command: >
+      #     command: |
       #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
       #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
       #     when: on_fail
@@ -201,29 +208,32 @@ jobs:
             npm install
             npm run build
             npm run migrations > mig-out
-      # - run:
-      #     name: Send migration results to memstash
-      #     command: |
-      #       if grep "has been executed successfully" mig-out
-      #       then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
-      #       else exit 1
-      #       fi
-      # - run:
-      #     name: rollback after failed migration
-      #     command: |
-      #       cd backend
-      #       npm run migrations:revert
-      #     when: on_fail
-      # - save_cache:
-      #     paths:
-      #       - backend/node_modules
-      #     key: backend-build
+      - run:
+          name: Send migration results to memstash
+          command: |
+            if grep "has been executed successfully" mig-out
+            then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
+            else exit 1
+            fi
+      - run:
+          name: rollback after failed migration
+          command: |
+            cd backend
+            npm run migrations:revert
+          when: on_fail
+      - save_cache:
+          paths:
+            - backend/node_modules
+          key: backend-build
 
   deploy-frontend:
     docker:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - frontend-build
       - run:
           name: install aws cli 
           command: |
@@ -233,13 +243,14 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+            cd frontend
             npm i
       - attach_workspace:
           at: ~/
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=`cat project/AWS_IP`
+            export BACKEND_IP=`cat ../AWS_IP`
             export API_URL="http://${BACKEND_IP}"
             echo "API_URL is ${API_URL}"
       - run:
@@ -251,9 +262,12 @@ jobs:
 
   deploy-backend:
     docker:
-      - image: python:3.8.6-alpine3.12
+      - image: circleci/node:13.8.0
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - backend-build
       - add_ssh_keys:
           fingerprints:
             - "23:ce:01:06:e8:33:69:d8:1b:8d:5d:31:5f:70:a0:08"
@@ -262,16 +276,24 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+            cd backend
             npm i
       - run:
           name: get API_URL as env var
           command: |
-            export BACKEND_IP=`cat AWS_IP`
+            export BACKEND_IP=`cat ../AWS_IP`
       - run:
           name: copy backend dist to EC2 instance
           command: |
             ssh ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
             scp -r backend/dist ubuntu@${BACKEND_IP}:~/
+      - run:
+          name: install ansible
+          command: |
+            # echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
+            # sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
+            sudo apt update
+            sudo apt install -y ansible
       - run:
           name: Deploy backend
           command: >
@@ -280,6 +302,59 @@ jobs:
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE, "BACKEND_IP":$BACKEND_IP}'
       # Here's where you will add some code to rollback on failure
+
+  smoke-test:
+    docker:
+      # Lightweight Docker image 
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - backend-build
+      - restore_cache:
+          keys:
+            - frontend-build
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            cd frontend
+            npm i
+            cd ../backend
+            npm i
+      - run:
+          name: Get backend url
+          command: |
+            cd ..
+            export AWS_IP=`cat AWS_IP`
+            export BACKEND_URL="http://${AWS_IP}/api/status"
+            echo "BACKEND_URL is $BACKEND_URL"
+      - run:
+          name: Backend smoke test.
+          command: |
+            if curl -s $BACKEND_URL
+            then
+              return 0
+            else
+              return 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
+            if curl -s $URL | grep "Welcome"
+              return 1
+            else
+              return 1
+            fi
+      # Here's where you will add some code to rollback on failure
+      # - run:
+      #     name: on failure delete stacks that were created
+      #     command: |
+      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
+      #     when: on_fail
 
 workflows:
   default:
@@ -321,3 +396,7 @@ workflows:
       - deploy-backend:
           requires:
             - run-migrations
+      - smoke-test:
+          requires:
+            - deploy-backend
+            - deploy-frontend
