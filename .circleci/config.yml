@@ -15,8 +15,8 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - AWS_IP
-            - .circleci/ansible/inventory.txt
+            - project/AWS_IP
+            - project/.circleci/ansible/inventory.txt
       # - restore_cache:
       #     keys:
       #       - frontend-build
