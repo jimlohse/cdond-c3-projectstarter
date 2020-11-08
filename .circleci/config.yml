@@ -264,21 +264,23 @@ jobs:
             unzip awscliv2.zip
             sudo ./aws/install
       - run:
-          name: Install dependencies
+          name: Install dependencies # and build to get dist (look into caching dist)
           command: |
             cd frontend
             npm i
+            npm run build
       - attach_workspace:
           at: ~/
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=`cat ../AWS_IP`
+            export BACKEND_IP=`cat AWS_IP`
             export API_URL="http://${BACKEND_IP}"
             echo "API_URL is ${API_URL}"
       - run:
           name: Deploy frontend objects
           command: |
+            cd frontend
             npm run build # "bakes" the API_URL into the build, supposedly
             aws s3 cp frontend/dist s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
       # add some code to rollback on failure
@@ -297,14 +299,15 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Install dependencies
+          name: Install dependencies # and build to get dist (look into caching dist)
           command: |
             cd backend
             npm i
+            npm run build
       - run:
           name: get API_URL as env var
           command: |
-            export BACKEND_IP=`cat ../AWS_IP`
+            export BACKEND_IP=`cat AWS_IP`
       - run:
           name: copy backend dist to EC2 instance
           command: |
