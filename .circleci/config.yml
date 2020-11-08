@@ -68,9 +68,9 @@ jobs:
           name: test if AWS_IP file is there
           command: |
             echo "AWS IP file contains..."
-            cat project/AWS_IP
+            cat AWS_IP
             echo "inventory file contains..."
-            cat project/.circleci/ansible/inventory.txt
+            cat .circleci/ansible/inventory.txt
       # - restore_cache:
       #     keys:
       #       - frontend-build
