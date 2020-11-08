@@ -157,14 +157,14 @@ jobs:
           command: |
             echo '[web]' > .circleci/ansible/inventory.txt
             export AWS_IP=`aws ec2 describe-instances --filter "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress]" --output=text`
-            echo "AWS_IP is $AWS_IP"
+            echo AWS_IP is ${AWS_IP}
             echo $AWS_IP >> .circleci/ansible/inventory.txt
             echo $AWS_IP > AWS_IP
       - persist_to_workspace:
           root: ~/
           paths:
-            - AWS_IP
-            - .circleci/ansible/inventory.txt
+            - ~/AWS_IP
+            - ~/.circleci/ansible/inventory.txt
 
   configure-infrastructure:
     docker:
