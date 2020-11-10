@@ -3,6 +3,42 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.1.1
 
+commands:
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    parameters:
+      workflow-id-7:
+        type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name jims-back-end-<< parameters.workflow-id-7 >>
+            aws cloudformation delete-stack --stack-name jims-front-end-<< parameters.workflow-id-7 >>
+            exit 1
+
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      workflow-id-7:
+        type: string
+        default: ${CIRCLE_WORKFLOW_ID:0:7}
+    steps:
+      - run:
+          name: Revert migrations
+          # Add when this will run
+          command: |
+            export SUCCESS=`curl -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migrate-succeeded`
+            if(( $SUCCESS=='succeeded' )); 
+            then
+              cd ~/project/backend
+              npm install
+              npm run migrations:revert
+              exit 1
+            fi
+
 jobs:
   build-frontend:
     docker:
@@ -204,12 +240,12 @@ jobs:
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
-      # - run:
-      #     name: on failure delete stacks that were created
-      #     command: |
-      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #     when: on_fail
+      - run:
+          name: on failure delete stacks that were created
+          command: |
+            aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
   run-migrations:
     docker:
@@ -228,22 +264,19 @@ jobs:
             npm run migrations | tee mig-out
             # Send migration results to memstash
             if grep "has been executed successfully" mig-out
-            then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
-            else exit 1
+            then 
+              curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/migrate-succeeded
+            else
+              curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "failed" https://api.memstash.io/values/migrate-succeeded
+              exit 1
             fi
+      # do this in smoke test phase per instructions
       # - run:
-      #     name: Send migration results to memstash
+      #     name: rollback after failed migration
       #     command: |
-      #       if grep "has been executed successfully" mig-out
-      #       then curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "succeeded" https://api.memstash.io/values/key
-      #       else exit 1
-      #       fi
-      - run:
-          name: rollback after failed migration
-          command: |
-            cd backend
-            npm run migrations:revert
-          when: on_fail
+      #       cd backend
+      #       npm run migrations:revert
+      #     when: on_fail
       - save_cache:
           paths:
             - backend/node_modules
@@ -342,18 +375,18 @@ jobs:
             - frontend-build
       - attach_workspace:
           at: ~/
-      - run:
-          name: Install dependencies
-          command: |
-            cd frontend
-            npm i
-            cd ../backend
-            npm i
+      # - run:
+      #     name: Install dependencies
+      #     command: |
+      #       cd frontend
+      #       npm i
+      #       cd ../backend
+      #       npm i
       - run:
           name: Get backend url
           command: |
             cd ..
-            export AWS_IP=`cat ../AWS_IP`
+            export AWS_IP=`cat AWS_IP`
             export BACKEND_URL="http://${AWS_IP}/api/status"
             echo "BACKEND_URL is $BACKEND_URL"
       - run:
@@ -375,12 +408,19 @@ jobs:
               return 1
             fi
       # Here's where you will add some code to rollback on failure
-      # - run:
-      #     name: on failure delete stacks that were created
-      #     command: |
-      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #     when: on_fail
+      - run:
+          name: on failure call destroy environment command
+          command: |
+            - revert-migrations:
+                workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+            - return 1
+          when: on_fail
+      - run:
+          name: revert migrations on failure
+          command: |
+            - destroy-environment:
+                workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_fail
 
 workflows:
   default:
