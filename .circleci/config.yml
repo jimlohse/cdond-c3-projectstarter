@@ -305,14 +305,11 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Get backend url
+          name: Get backend url and deploy frontend objects
           command: |
             export BACKEND_IP=`cat AWS_IP`
             export API_URL="http://${BACKEND_IP}"
             echo "API_URL is ${API_URL}"
-      - run:
-          name: Deploy frontend objects
-          command: |
             cd frontend
             npm run build # "bakes" the API_URL into the build, supposedly
             aws s3 cp frontend/dist s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive --acl public-read
@@ -338,12 +335,9 @@ jobs:
             npm i
             npm run build
       - run:
-          name: get API_URL as env var
+          name: get API_URL as env var and copy backend dist to EC2 instance
           command: |
             export BACKEND_IP=`cat AWS_IP`
-      - run:
-          name: copy backend dist to EC2 instance
-          command: |
             ssh ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
             scp -r backend/dist ubuntu@${BACKEND_IP}:~/
       - run:
