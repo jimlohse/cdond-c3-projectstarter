@@ -37,6 +37,7 @@ commands:
               cd ~/project/backend
               npm install
               npm run migrations:revert
+              curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "failed" https://api.memstash.io/values/migrate-succeeded
               exit 1
             fi
 
@@ -370,13 +371,21 @@ jobs:
             - frontend-build
       - attach_workspace:
           at: ~/
-      # - run:
-      #     name: Install dependencies
-      #     command: |
-      #       cd frontend
-      #       npm i
-      #       cd ../backend
-      #       npm i
+      - run:
+          name: Install AWS CLI
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
+          name: Frontend smoke test
+          command: |
+            export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
+            if curl -s $URL | grep "Welcome"
+              return 0
+            else
+              return 1
+            fi
       - run:
           name: Get backend url and backend smoke test
           command: |
@@ -387,15 +396,6 @@ jobs:
             if curl -s $BACKEND_URL
             then
               return 0
-            else
-              return 1
-            fi
-      - run:
-          name: Frontend smoke test
-          command: |
-            export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
-            if curl -s $URL | grep "Welcome"
-              return 1
             else
               return 1
             fi
