@@ -306,7 +306,7 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Get backend url and deploy frontend objects
+          name: Get backend url and deploy frontend objects 
           command: |
             export BACKEND_IP=`cat AWS_IP`
             export API_URL="http://${BACKEND_IP}"
