@@ -309,6 +309,7 @@ jobs:
           command: |
             export BACKEND_IP=`cat AWS_IP`
             export API_URL="http://${BACKEND_IP}"
+            echo "BACKEND_IP is ${BACKEND_IP}"
             echo "API_URL is ${API_URL}"
             cd frontend
             npm run build # "bakes" the API_URL into the build, supposedly
@@ -338,6 +339,7 @@ jobs:
           name: get API_URL as env var and copy backend dist to EC2 instance
           command: |
             export BACKEND_IP=`cat AWS_IP`
+            echo "BACKEND_IP is ${BACKEND_IP}"
             ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist' 
             scp -r backend/dist ubuntu@${BACKEND_IP}:~/
       - run:
