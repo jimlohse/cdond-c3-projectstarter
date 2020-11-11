@@ -1,8 +1,8 @@
 ---
 
-- name: start pm2 for backend/dist/main.js
+- name: start pm2 for dist/main.js
   become: no
-  command: pm2-runtime backend/dist/main.js
+  command: pm2 start backend/dist/main.js
 
 
 

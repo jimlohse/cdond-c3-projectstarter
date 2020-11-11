@@ -15,6 +15,7 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
+            aws s3 rb s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --force
             aws cloudformation delete-stack --stack-name jims-back-end-<< parameters.workflow-id-7 >>
             aws cloudformation delete-stack --stack-name jims-front-end-<< parameters.workflow-id-7 >>
             exit 1
@@ -340,13 +341,11 @@ jobs:
           command: |
             export BACKEND_IP=`cat AWS_IP`
             echo "BACKEND_IP is ${BACKEND_IP}"
-            ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist' 
-            scp -r backend/dist ubuntu@${BACKEND_IP}:~/
+            ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
+            scp -r backend ubuntu@${BACKEND_IP}:~/
       - run:
           name: install ansible
           command: |
-            # echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
-            # sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
             sudo apt update
             sudo apt install -y ansible
       - run:
@@ -379,15 +378,12 @@ jobs:
       #       cd ../backend
       #       npm i
       - run:
-          name: Get backend url
+          name: Get backend url and backend smoke test
           command: |
             cd ..
-            export AWS_IP=`cat AWS_IP`
+            export AWS_IP=`cat project/AWS_IP`
             export BACKEND_URL="http://${AWS_IP}/api/status"
             echo "BACKEND_URL is $BACKEND_URL"
-      - run:
-          name: Backend smoke test.
-          command: |
             if curl -s $BACKEND_URL
             then
               return 0
@@ -404,45 +400,38 @@ jobs:
               return 1
             fi
       # Here's where you will add some code to rollback on failure
-      - run:
-          name: on failure call destroy environment command
-          command: |
-            - revert-migrations:
-                workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-            - return 1
-          when: on_fail
-      - run:
-          name: revert migrations on failure
-          command: |
-            - destroy-environment:
-                workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-          when: on_fail
+      - revert-migrations:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+          # when: on_fail
+      - destroy-environment:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+          # when: on_fail
 
 workflows:
   default:
     jobs:
       - build-frontend
       - build-backend
-      - test-frontend:
-          requires:
-            - build-frontend
-      - test-backend:
-          requires:
-            - build-backend
-      - scan-backend:
-          requires: 
-            - build-backend
-      - scan-frontend:
-          requires: 
-            - build-frontend
+      # - test-frontend:
+      #     requires:
+      #       - build-frontend
+      # - test-backend:
+      #     requires:
+      #       - build-backend
+      # - scan-backend:
+      #     requires: 
+      #       - build-backend
+      # - scan-frontend:
+      #     requires: 
+      #       - build-frontend
       - deploy-infrastructure:
           requires:
-            # - build-frontend
-            # - build-backend
-            - test-frontend
-            - test-backend
-            - scan-frontend
-            - scan-backend
+            - build-frontend
+            - build-backend
+            # - test-frontend
+            # - test-backend
+            # - scan-frontend
+            # - scan-backend
           filters:
             branches:
               only: master
