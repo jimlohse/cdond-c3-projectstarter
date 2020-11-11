@@ -342,7 +342,7 @@ jobs:
             export BACKEND_IP=`cat AWS_IP`
             echo "BACKEND_IP is ${BACKEND_IP}"
             ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
-            scp -r backend ubuntu@${BACKEND_IP}:~/
+            scp -r backend/dist ubuntu@${BACKEND_IP}:~/backend
       - run:
           name: install ansible
           command: |
