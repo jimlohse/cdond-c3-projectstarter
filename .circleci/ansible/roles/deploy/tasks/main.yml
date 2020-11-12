@@ -4,7 +4,7 @@
   become: no
   synchronize:
     src: ~/project/backend
-    dest: ~/backend
+    dest: home/ubuntu/backend
     checksum: no
     archive: no
     recursive: yes
