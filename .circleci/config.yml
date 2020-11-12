@@ -244,9 +244,16 @@ jobs:
       - run:
           name: on failure delete stacks that were created
           command: |
+            aws s3 rm s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
             aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
           when: on_fail
+      # - revert-migrations:
+      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      #     when: on_fail
+      # - destroy-environment:
+      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      #     when: on_fail
 
   run-migrations:
     docker:
