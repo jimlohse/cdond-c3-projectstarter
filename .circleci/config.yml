@@ -359,21 +359,14 @@ jobs:
       - run:
           name: install tar and gzip to use persist_to_workspace
           command: yum -y install tar gzip
-      # - restore_cache:
-      #     keys:
-      #       - backend-build
-      # - restore_cache:
-      #     keys:
-      #       - frontend-build
+      - restore_cache:
+          keys:
+            - backend-build
+      - restore_cache:
+          keys:
+            - frontend-build
       - attach_workspace:
           at: ~/
-      # - run:
-      #     name: Install AWS CLI and less
-      #     command: |
-      #       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      #       unzip awscliv2.zip
-      #       sudo ./aws/install
-      #       sudo apt install -y less
       - run:
           name: Frontend smoke test
           command: |
