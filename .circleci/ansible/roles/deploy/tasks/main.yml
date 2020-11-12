@@ -3,7 +3,7 @@
 - name: sync node install including node_modules
   become: no
   synchronize:
-    src: ~/backend
+    src: ~/project/backend
     dest: ~/backend
     checksum: no
     archive: no
