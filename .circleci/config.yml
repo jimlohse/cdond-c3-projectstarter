@@ -355,12 +355,15 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - backend-build
-      - restore_cache:
-          keys:
-            - frontend-build
+      - run:
+          name: install tar and gzip to use persist_to_workspace
+          command: yum -y install tar gzip
+      # - restore_cache:
+      #     keys:
+      #       - backend-build
+      # - restore_cache:
+      #     keys:
+      #       - frontend-build
       - attach_workspace:
           at: ~/
       # - run:
