@@ -15,7 +15,8 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws s3 rb s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --force
+            aws s3 rm s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws s3api delete-bucket --bucket s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}
             aws cloudformation delete-stack --stack-name jims-back-end-<< parameters.workflow-id-7 >>
             aws cloudformation delete-stack --stack-name jims-front-end-<< parameters.workflow-id-7 >>
             exit 1
@@ -377,9 +378,9 @@ jobs:
             export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
             if curl -s $URL | grep "Welcome"
             then
-              return 0
+              exit 0
             else
-              return 1
+              exit 1
             fi
       - run:
           name: Get backend url and backend smoke test
@@ -390,9 +391,9 @@ jobs:
             echo "BACKEND_URL is $BACKEND_URL"
             if curl -s $BACKEND_URL
             then
-              return 0
+              exit 0
             else
-              return 1
+              exit 1
             fi
       # Here's where you will add some code to rollback on failure
       - revert-migrations:
