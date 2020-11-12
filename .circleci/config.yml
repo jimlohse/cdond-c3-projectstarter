@@ -32,7 +32,7 @@ commands:
           # Add when this will run
           command: |
             export SUCCESS=`curl -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migrate-succeeded`
-            if(( $SUCCESS=='succeeded' )); 
+            if [ $SUCCESS=='succeeded' ]
             then
               cd ~/project/backend
               npm install
@@ -272,13 +272,6 @@ jobs:
               curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "failed" https://api.memstash.io/values/migrate-succeeded
               exit 1
             fi
-      # do this in smoke test phase per instructions
-      # - run:
-      #     name: rollback after failed migration
-      #     command: |
-      #       cd backend
-      #       npm run migrations:revert
-      #     when: on_fail
       - save_cache:
           paths:
             - backend/node_modules
@@ -372,16 +365,18 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: Install AWS CLI
+          name: Install AWS CLI and less
           command: |
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip
             sudo ./aws/install
+            sudo apt install -y less
       - run:
           name: Frontend smoke test
           command: |
             export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
             if curl -s $URL | grep "Welcome"
+            then
               return 0
             else
               return 1
