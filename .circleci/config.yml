@@ -356,10 +356,18 @@ jobs:
       - run:
           name: Deploy backend
           command: >
-            ansible-playbook -i 34.209.215.52, .circleci/ansible/deploy-backend.yml
+            ansible-playbook -i 52.43.145.236, .circleci/ansible/deploy-backend.yml
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
             --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
+      - run:
+          name: write new AWS_IP
+          command: |
+            echo '52.43.145.236' > AWS_IP
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/AWS_IP
       # Here's where you will add some code to rollback on failure
 
   smoke-test:
