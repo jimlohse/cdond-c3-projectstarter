@@ -19,8 +19,6 @@ commands:
             aws s3api delete-bucket --bucket udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}
             aws cloudformation delete-stack --stack-name jims-back-end-<< parameters.workflow-id-7 >>
             aws cloudformation delete-stack --stack-name jims-front-end-<< parameters.workflow-id-7 >>
-            exit 1
-
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow
     parameters:
@@ -354,7 +352,7 @@ jobs:
 
   smoke-test:
     docker:
-      - image: circleci/node:13.8.0
+      - image: amazon/aws-cli
     steps:
       - checkout
       - restore_cache:
@@ -365,13 +363,13 @@ jobs:
             - frontend-build
       - attach_workspace:
           at: ~/
-      - run:
-          name: Install AWS CLI and less
-          command: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            sudo apt install -y less
+      # - run:
+      #     name: Install AWS CLI and less
+      #     command: |
+      #       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      #       unzip awscliv2.zip
+      #       sudo ./aws/install
+      #       sudo apt install -y less
       - run:
           name: Frontend smoke test
           command: |
