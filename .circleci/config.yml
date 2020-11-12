@@ -334,8 +334,9 @@ jobs:
           command: |
             export BACKEND_IP=`cat AWS_IP`
             echo "BACKEND_IP is ${BACKEND_IP}"
-            ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist'
-            scp -r backend/dist ubuntu@${BACKEND_IP}:~/backend
+            ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist/node_modules'
+            scp -r backend/dist/* ubuntu@${BACKEND_IP}:~/backend/dist
+            scp -r backend/node_modules/* ubuntu@${BACKEND_IP}:~/backend/dist/node_modules
       - run:
           name: install ansible
           command: |
