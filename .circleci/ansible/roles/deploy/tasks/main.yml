@@ -9,16 +9,11 @@
     archive: no
     recursive: yes
 
-- name: echo env
-  become: no
-  shell: |
-    echo $TYPEORM_USERNAME
-    echo $TYPEORM_DATABASE
-    echo $TYPEORM_HOST
-
 - name: start pm2 for dist/main.js
   become: no
   shell: pm2 start backend/dist/main.js
+  environment:
+    TYPEORM_USERNAME=postgres
 
 
 
