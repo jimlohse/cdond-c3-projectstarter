@@ -330,12 +330,12 @@ jobs:
             - "23:ce:01:06:e8:33:69:d8:1b:8d:5d:31:5f:70:a0:08"
       - attach_workspace:
           at: ~/
-      # - run:
-      #     name: Install dependencies # and build to get dist (look into caching dist)
-      #     command: |
-      #       cd backend
-      #       npm i
-      #       npm run build
+      - run:
+          name: Install dependencies # and build to get dist (look into caching dist)
+          command: |
+            cd backend
+            npm i
+            npm run build
       - run:
           name: install rsync for ansible synchronize
           command: |
