@@ -11,7 +11,7 @@
 
 - name: start pm2 for dist/main.js
   become: no
-  command: pm2 start backend/dist/main.js
+  shell: pm2 start backend/dist/main.js
 
 
 
