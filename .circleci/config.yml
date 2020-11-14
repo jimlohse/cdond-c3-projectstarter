@@ -28,7 +28,7 @@ commands:
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
+          when: on_fail
           command: |
             export SUCCESS=`curl -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migrate-succeeded`
             if [ $SUCCESS=='succeeded' ]
@@ -238,22 +238,20 @@ jobs:
           name: configure server on AWS
           command: >
             ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml
-            --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
-            --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
-            --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
-      - run:
-          name: on failure delete stacks that were created
-          command: |
-            aws s3 rm s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-            aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
-            aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
-          when: on_fail
-      # - revert-migrations:
-      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+            # --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
+            # --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
+            # --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
+      # - run:
+      #     name: on failure delete stacks that were created (use commands instead)
+      #     command: |
+      #       aws s3 rm s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
+      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
       #     when: on_fail
-      # - destroy-environment:
-      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-      #     when: on_fail
+      - revert-migrations:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
 
   run-migrations:
     docker:
@@ -346,10 +344,22 @@ jobs:
             sudo apt update
             sudo apt install -y ansible
       - run:
+          name: setup env file for backend
+          command: |
+            cd backend
+            echo ENVIRONMENT=production > .env
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> .env
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> .env
+            echo TYPEORM_HOST=$TYPEORM_HOST >> .env
+            echo TYPEORM_PORT=$TYPEORM_PORT >> .env
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> .env
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> .env
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> .env
+      - run:
           name: Deploy backend
           command: >
             ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
-            --extra-vars "ENVIRONMENT=production TYPEORM_CONNECTION=postgres TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts TYPEORM_HOST=${TYPEORM_HOST} TYPEORM_PORT=5432 TYPEORM_USERNAME=${TYPEORM_USERNAME} TYPEORM_PASSWORD=${TYPEORM_PASSWORD} TYPEORM_DATABASE=${TYPEORM_DATABASE}"
+            # --extra-vars "ENVIRONMENT=production TYPEORM_CONNECTION=postgres TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts TYPEORM_HOST=${TYPEORM_HOST} TYPEORM_PORT=5432 TYPEORM_USERNAME=${TYPEORM_USERNAME} TYPEORM_PASSWORD=${TYPEORM_PASSWORD} TYPEORM_DATABASE=${TYPEORM_DATABASE}"
             # --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             # --extra-vars '{"TYPEORM_HOST":${TYPEORM_HOST},"TYPEORM_PORT":"5432","TYPEORM_USERNAME":${TYPEORM_USERNAME}}'
             # --extra-vars '{"TYPEORM_PASSWORD":${TYPEORM_PASSWORD},"TYPEORM_DATABASE":${TYPEORM_DATABASE}}'
@@ -401,10 +411,8 @@ jobs:
       # Here's where you will add some code to rollback on failure
       # - revert-migrations:
       #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-      #     # when: on_fail
       # - destroy-environment:
       #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-      #     # when: on_fail
 
 workflows:
   default:

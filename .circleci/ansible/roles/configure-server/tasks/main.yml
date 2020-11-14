@@ -29,24 +29,10 @@
     name: pm2
     global: yes
     state: present # https://stackoverflow.com/questions/35439934/ansible-how-to-run-node-js-application-through-pm2
-#
-# - name: "copy index.js file"
-#   copy:
-#     src: index.js
-#     dest: .
-#     backup: yes
 
-# - name: "run index.js file"
-#   shell: node index.js &
-#  register: print_result
-
-# - name: print message
-#   debug:
-#     msg: "{{ print_result.stdout_lines }}"
-
-- name: set node to run on port 80, make sure AWS security group allows it
-  become: yes
-  command: setcap cap_net_bind_service=+ep /usr/bin/node
+# - name: set node to run on port 80, make sure AWS security group allows it
+#   become: yes
+#   command: setcap cap_net_bind_service=+ep /usr/bin/node
 
 
 
