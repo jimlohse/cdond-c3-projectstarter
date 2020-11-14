@@ -166,10 +166,10 @@ jobs:
           channel: circleci_notification
           event: fail
           template: basic_fail_1
-      # - save_cache:
-      #     paths:
-      #       - backend/node_modules
-      #     key: backend-build
+      - save_cache:
+          paths:
+            - backend/node_modules
+          key: backend-build
 
   deploy-infrastructure:
     docker:
@@ -340,25 +340,11 @@ jobs:
           name: install rsync for ansible synchronize
           command: |
             sudo apt install -y rsync
-      # - run:
-      #     name: get API_URL as env var and copy backend dist to EC2 instance DO THIS IN ANSIBLE WITH SYNC, SHOULD BE FASTER
-      #     command: |
-      #       export BACKEND_IP=`cat AWS_IP`
-      #       echo "BACKEND_IP is ${BACKEND_IP}"
-      #       # ssh -oStrictHostKeyChecking=no ubuntu@${BACKEND_IP} 'mkdir -p backend/dist/node_modules'
-      #       # scp -r backend/dist/* ubuntu@${BACKEND_IP}:~/backend/dist
-      #       # scp -r backend/node_modules/* ubuntu@${BACKEND_IP}:~/backend/dist/node_modules
       - run:
           name: install ansible
           command: |
             sudo apt update
             sudo apt install -y ansible
-      - run:
-          name: check env vars
-          command: |
-            echo host is ${TYPEORM_HOST}
-            echo username is ${TYPEORM_USERNAME}
-
       - run:
           name: Deploy backend
           command: >
@@ -408,7 +394,7 @@ jobs:
           command: |
             cd ..
             export AWS_IP=`cat project/AWS_IP`
-            export BACKEND_URL="http://${AWS_IP}/api/status"
+            export BACKEND_URL="http://${AWS_IP}:3030/api/status"
             echo "BACKEND_URL is $BACKEND_URL"
             if curl -s $BACKEND_URL
             then
@@ -417,54 +403,54 @@ jobs:
               exit 1
             fi
       # Here's where you will add some code to rollback on failure
-      - revert-migrations:
-          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-          # when: on_fail
-      - destroy-environment:
-          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-          # when: on_fail
+      # - revert-migrations:
+      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      #     # when: on_fail
+      # - destroy-environment:
+      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      #     # when: on_fail
 
 workflows:
   default:
     jobs:
-      # - build-frontend
-      # - build-backend
-      # - test-frontend:
-      #     requires:
-      #       - build-frontend
-      # - test-backend:
-      #     requires:
-      #       - build-backend
-      # - scan-backend:
-      #     requires: 
-      #       - build-backend
-      # - scan-frontend:
-      #     requires: 
-      #       - build-frontend
-      # - deploy-infrastructure:
-      #     requires:
-      #       - build-frontend
-      #       - build-backend
-      #       # - test-frontend
-      #       # - test-backend
-      #       # - scan-frontend
-      #       # - scan-backend
-      #     filters:
-      #       branches:
-      #         only: master
-      # - configure-infrastructure:
-      #     requires:
-      #       - deploy-infrastructure
-      # - run-migrations:
-      #     requires:
-      #       - configure-infrastructure
-      # - deploy-frontend:
-      #     requires:
-            # - run-migrations
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires:
+            - build-frontend
+      - test-backend:
+          requires:
+            - build-backend
+      - scan-backend:
+          requires: 
+            - build-backend
+      - scan-frontend:
+          requires: 
+            - build-frontend
+      - deploy-infrastructure:
+          requires:
+            # - build-frontend
+            # - build-backend
+            - test-frontend
+            - test-backend
+            - scan-frontend
+            - scan-backend
+          filters:
+            branches:
+              only: master
+      - configure-infrastructure:
+          requires:
+            - deploy-infrastructure
+      - run-migrations:
+          requires:
+            - configure-infrastructure
+      - deploy-frontend:
+          requires:
+            - run-migrations
       - deploy-backend
-          # requires:
-            # - run-migrations
-      # - smoke-test:
-      #     requires:
-      #       - deploy-backend
-            # - deploy-frontend
+          requires:
+            - run-migrations
+      - smoke-test:
+          requires:
+            - deploy-backend
+            - deploy-frontend
