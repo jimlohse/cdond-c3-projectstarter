@@ -355,7 +355,7 @@ jobs:
             sudo apt install -y ansible
       - run:
           name: Deploy backend
-          command: >
+          shell: >
             ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
             --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
             --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
