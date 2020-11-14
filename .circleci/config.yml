@@ -354,6 +354,12 @@ jobs:
             sudo apt update
             sudo apt install -y ansible
       - run:
+          name: check env vars
+          command: |
+            echo host is ${TYPEORM_HOST}
+            echo username is ${TYPEORM_USERNAME}
+
+      - run:
           name: Deploy backend
           command: >
             ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
