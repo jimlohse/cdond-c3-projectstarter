@@ -11,7 +11,13 @@
 
 - name: start pm2 for dist/main.js
   become: no
-  shell: pm2 start backend/dist/main.js
+  shell: |
+    export TYPEORM_ENTITIES=./modules/domain/**/*.entity.{ts,js}
+    export TYPEORM_USERNAME=postgres
+    export TYPEORM_PASSWORD=NowUtah22
+    export TYPEORM_DATABASE=postgres
+    export TYPEORM_HOST=database-1.cniutosswxke.us-west-2.rds.amazonaws.com
+    pm2 start backend/dist/main.js
 
 
 
