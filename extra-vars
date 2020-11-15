@@ -1,0 +1,3 @@
+            # --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
+            # --extra-vars '{"TYPEORM_HOST":$TYPEORM_HOST,"TYPEORM_PORT":"5432","TYPEORM_USERNAME":$TYPEORM_USERNAME}'
+            # --extra-vars '{"TYPEORM_PASSWORD":$TYPEORM_PASSWORD,"TYPEORM_DATABASE":$TYPEORM_DATABASE}'
