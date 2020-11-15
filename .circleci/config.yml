@@ -30,15 +30,14 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            export SUCCESS=`curl -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migrate-succeeded`
-            if [ $SUCCESS=='succeeded' ]
-            then
-              cd ~/project/backend
-              npm install
-              npm run migrations:revert
-              curl -H "Content-Type: text/plain" -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "failed" https://api.memstash.io/values/migrate-succeeded
-              exit 1
-            fi
+            # export SUCCESS=`curl -H "token: jimgrate-${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/migrate-succeeded`
+            # if [ $SUCCESS=='failure' ]
+            # then
+            cd ~/project/backend
+            # npm install
+            npm run migrations:revert
+            exit 1
+            # fi
 
 jobs:
   build-frontend:
@@ -388,7 +387,7 @@ jobs:
             export URL="http://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"
             if curl -s $URL | grep "Welcome"
             then
-              exit 0
+              exit 1
             else
               exit 1
             fi
@@ -401,57 +400,58 @@ jobs:
             echo "BACKEND_URL is $BACKEND_URL"
             if curl -s $BACKEND_URL
             then
-              exit 0
+              exit 1
             else
               exit 1
             fi
-      # Here's where you will add some code to rollback on failure
-      # - revert-migrations:
-      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
-      # - destroy-environment:
-      #     workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+          when: on_success
+      Here's where you will add some code to rollback on failure
+      - revert-migrations:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
 
 workflows:
   default:
     jobs:
-      - build-frontend
-      - build-backend
-      - test-frontend:
-          requires:
-            - build-frontend
-      - test-backend:
-          requires:
-            - build-backend
-      - scan-backend:
-          requires: 
-            - build-backend
-      - scan-frontend:
-          requires: 
-            - build-frontend
-      - deploy-infrastructure:
-          requires:
-            # - build-frontend
-            # - build-backend
-            - test-frontend
-            - test-backend
-            - scan-frontend
-            - scan-backend
-          filters:
-            branches:
-              only: master
-      - configure-infrastructure:
-          requires:
-            - deploy-infrastructure
-      - run-migrations:
-          requires:
-            - configure-infrastructure
-      - deploy-frontend:
-          requires:
-            - run-migrations
-      - deploy-backend:
-          requires:
-            - run-migrations
-      - smoke-test:
-          requires:
-            - deploy-backend
-            - deploy-frontend
+      # - build-frontend
+      # - build-backend
+      # - test-frontend:
+      #     requires:
+      #       - build-frontend
+      # - test-backend:
+      #     requires:
+      #       - build-backend
+      # - scan-backend:
+      #     requires: 
+      #       - build-backend
+      # - scan-frontend:
+      #     requires: 
+      #       - build-frontend
+      # - deploy-infrastructure:
+      #     requires:
+      #       # - build-frontend
+      #       # - build-backend
+      #       - test-frontend
+      #       - test-backend
+      #       - scan-frontend
+      #       - scan-backend
+      #     filters:
+      #       branches:
+      #         only: master
+      # - configure-infrastructure:
+      #     requires:
+      #       - deploy-infrastructure
+      # - run-migrations:
+      #     requires:
+      #       - configure-infrastructure
+      # - deploy-frontend:
+      #     requires:
+      #       - run-migrations
+      # - deploy-backend:
+      #     requires:
+      #       - run-migrations
+      - smoke-test
+          # requires:
+          #   - deploy-backend
+          #   - deploy-frontend
