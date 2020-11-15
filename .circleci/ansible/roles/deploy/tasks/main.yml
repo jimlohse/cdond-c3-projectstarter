@@ -11,9 +11,9 @@
 
 - name: start pm2 for dist/main.js
   become: no
-  shell: |
-  cd backend/dist
-  pm2 start main.js
+  shell: pm2 start main.js
+  args:
+    chdir: /home/ubuntu/backend/dist
 
 
 
