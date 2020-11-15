@@ -34,7 +34,9 @@ commands:
             # if [ $SUCCESS=='failure' ]
             # then
             cd ~/project/backend
-            # npm install
+            # run migrations three times to get all migrations
+            npm run migrations:revert
+            npm run migrations:revert
             npm run migrations:revert
             exit 1
             # fi
