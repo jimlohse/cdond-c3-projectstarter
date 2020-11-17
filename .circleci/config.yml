@@ -423,6 +423,10 @@ jobs:
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip
             sudo ./aws/install
+      - run:
+          name: Install less for handling aws output
+          command: |
+            sudo apt install -y less
       - restore_cache: # need node_modules to revert migrations if necessary
           keys:
             - backend-build
