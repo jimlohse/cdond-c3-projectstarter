@@ -242,14 +242,8 @@ jobs:
       - run:
           name: configure prometheus on EC2 instance
           command: |
-            ansible-playbook -i .circleci/ansible/inventory.txt ./circleci/ansible/config-prom.yml
-      # - run:
-      #     name: on failure delete stacks that were created (use commands instead)
-      #     command: |
-      #       aws s3 rm s3://udapeople-jims-id-${CIRCLE_WORKFLOW_ID:0:7} --recursive --no-paginate
-      #       aws cloudformation delete-stack --stack-name jims-back-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #       aws cloudformation delete-stack --stack-name jims-front-end-${CIRCLE_WORKFLOW_ID:0:7}
-      #     when: on_fail
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/config-prom.yml
+      # these can't run, need an image where I have npm and aws cli installed, fix that
       - revert-migrations:
           workflow-id-7: ${CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment:
@@ -361,10 +355,6 @@ jobs:
           name: Deploy backend
           command: >
             ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml
-            # --extra-vars "ENVIRONMENT=production TYPEORM_CONNECTION=postgres TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts TYPEORM_HOST=${TYPEORM_HOST} TYPEORM_PORT=5432 TYPEORM_USERNAME=${TYPEORM_USERNAME} TYPEORM_PASSWORD=${TYPEORM_PASSWORD} TYPEORM_DATABASE=${TYPEORM_DATABASE}"
-            # --extra-vars '{"ENVIRONMENT":"production","TYPEORM_CONNECTION":"postgres","TYPEORM_ENTITIES":"./src/modules/domain/**/*.entity.ts"}'
-            # --extra-vars '{"TYPEORM_HOST":${TYPEORM_HOST},"TYPEORM_PORT":"5432","TYPEORM_USERNAME":${TYPEORM_USERNAME}}'
-            # --extra-vars '{"TYPEORM_PASSWORD":${TYPEORM_PASSWORD},"TYPEORM_DATABASE":${TYPEORM_DATABASE}}'
       - persist_to_workspace:
           root: ~/
           paths:
