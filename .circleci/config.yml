@@ -173,14 +173,15 @@ jobs:
           paths:
             - backend/node_modules
           key: backend-build
-      - run:
-          name: git push updated dependencies back to Github
-          command: |
-            git config user.email "jameslohse@me.com"
-            git config user.name "James Lohse"
-            git add .
-            git commit -m "push updated node files back to github"
-            git push
+      # only need this once, otherwise will error out and needs to check for changes
+      # - run:
+      #     name: git push updated dependencies back to Github
+      #     command: |
+      #       git config user.email "jameslohse@me.com"
+      #       git config user.name "James Lohse"
+      #       git add .
+      #       git commit -m "push updated node files back to github"
+      #       git push
 
   deploy-infrastructure:
     docker:
@@ -484,65 +485,65 @@ jobs:
 workflows:
   default:
     jobs:
-      # - build-frontend
+      - build-frontend
       - build-backend
-      # - test-frontend:
-      #     requires:
-      #       - build-frontend
-      # - test-backend:
-      #     requires:
-      #       - build-backend
+      - test-frontend:
+          requires:
+            - build-frontend
+      - test-backend:
+          requires:
+            - build-backend
       - scan-backend:
           requires: 
             - build-backend
-      # - scan-frontend:
-      #     requires: 
-      #       - build-frontend
-      # - deploy-infrastructure:
-      #     requires:
-      #       # - build-frontend
-      #       # - build-backend
-      #       - test-frontend
-      #       - test-backend
-      #       - scan-frontend
-      #       - scan-backend
-      #     filters:
-      #       branches:
-      #         only: master
-      # - configure-infrastructure:
-      #     requires:
-      #       - deploy-infrastructure
-      #     filters:
-      #       branches:
-      #         only: master
-      # - run-migrations:
-      #     requires:
-      #       - configure-infrastructure
-      #     filters:
-      #       branches:
-      #         only: master
-      # - deploy-frontend:
-      #     requires:
-      #       - run-migrations
-      #     filters:
-      #       branches:
-      #         only: master
-      # - deploy-backend:
-      #     requires:
-      #       - run-migrations
-      #     filters:
-      #       branches:
-      #         only: master
-      # - smoke-test:
-      #     requires:
-      #       - deploy-backend
-      #       - deploy-frontend
-      #     filters:
-      #       branches:
-      #         only: master
-      # - cloudfront-update:
-      #     requires:
-      #       - smoke-test
-      #     filters:
-      #       branches:
-      #         only: master
+      - scan-frontend:
+          requires: 
+            - build-frontend
+      - deploy-infrastructure:
+          requires:
+            # - build-frontend
+            # - build-backend
+            - test-frontend
+            - test-backend
+            - scan-frontend
+            - scan-backend
+          filters:
+            branches:
+              only: master
+      - configure-infrastructure:
+          requires:
+            - deploy-infrastructure
+          filters:
+            branches:
+              only: master
+      - run-migrations:
+          requires:
+            - configure-infrastructure
+          filters:
+            branches:
+              only: master
+      - deploy-frontend:
+          requires:
+            - run-migrations
+          filters:
+            branches:
+              only: master
+      - deploy-backend:
+          requires:
+            - run-migrations
+          filters:
+            branches:
+              only: master
+      - smoke-test:
+          requires:
+            - deploy-backend
+            - deploy-frontend
+          filters:
+            branches:
+              only: master
+      - cloudfront-update:
+          requires:
+            - smoke-test
+          filters:
+            branches:
+              only: master
