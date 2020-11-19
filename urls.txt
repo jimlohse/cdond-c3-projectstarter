@@ -1,5 +1,5 @@
 URL01: https://github.com/jimlohse/cdond-c3-projectstarter
-Public URL for your S3 Bucket (aka, your green candidate front-end) [URL02]
-d2fpevyv3z4ig.cloudfront.net [URL03]
-Public URLs to deployed application back-end in EC2 [URL04]
-http://50.17.150.164:9090/alerts[URL05]
+URL02: https://udapeople-jims-id-3137382.s3-us-west-2.amazonaws.com/index.html
+URL03: d2fpevyv3z4ig.cloudfront.net
+URL04: http://54.200.212.245:3030/api/status
+URL05: http://50.17.150.164:9090/targets

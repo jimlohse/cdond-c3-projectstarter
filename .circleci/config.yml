@@ -302,7 +302,7 @@ jobs:
           name: Get backend url and deploy frontend objects 
           command: |
             export BACKEND_IP=`cat AWS_IP`
-            export API_URL="http://${BACKEND_IP}"
+            export API_URL="http://${BACKEND_IP}:3030"
             echo "BACKEND_IP is ${BACKEND_IP}"
             echo "API_URL is ${API_URL}"
             cd frontend
@@ -473,65 +473,65 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
+      # - build-frontend
       - build-backend
-      - test-frontend:
-          requires:
-            - build-frontend
+      # - test-frontend:
+      #     requires:
+      #       - build-frontend
       - test-backend:
-          requires:
-            - build-backend
+          # requires:
+          #   - build-backend
       - scan-backend:
           requires: 
             - build-backend
-      - scan-frontend:
-          requires: 
-            - build-frontend
-      - deploy-infrastructure:
-          requires:
-            # - build-frontend
-            # - build-backend
-            - test-frontend
-            - test-backend
-            - scan-frontend
-            - scan-backend
-          filters:
-            branches:
-              only: master
-      - configure-infrastructure:
-          requires:
-            - deploy-infrastructure
-          filters:
-            branches:
-              only: master
-      - run-migrations:
-          requires:
-            - configure-infrastructure
-          filters:
-            branches:
-              only: master
-      - deploy-frontend:
-          requires:
-            - run-migrations
-          filters:
-            branches:
-              only: master
-      - deploy-backend:
-          requires:
-            - run-migrations
-          filters:
-            branches:
-              only: master
-      - smoke-test:
-          requires:
-            - deploy-backend
-            - deploy-frontend
-          filters:
-            branches:
-              only: master
-      - cloudfront-update:
-          requires:
-            - smoke-test
-          filters:
-            branches:
-              only: master
+      # - scan-frontend:
+      #     requires: 
+      #       - build-frontend
+      # - deploy-infrastructure:
+      #     requires:
+      #       # - build-frontend
+      #       # - build-backend
+      #       - test-frontend
+      #       - test-backend
+      #       - scan-frontend
+      #       - scan-backend
+      #     filters:
+      #       branches:
+      #         only: master
+      # - configure-infrastructure:
+      #     requires:
+      #       - deploy-infrastructure
+      #     filters:
+      #       branches:
+      #         only: master
+      # - run-migrations:
+      #     requires:
+      #       - configure-infrastructure
+      #     filters:
+      #       branches:
+      #         only: master
+      # - deploy-frontend:
+      #     requires:
+      #       - run-migrations
+      #     filters:
+      #       branches:
+      #         only: master
+      # - deploy-backend:
+      #     requires:
+      #       - run-migrations
+      #     filters:
+      #       branches:
+      #         only: master
+      # - smoke-test:
+      #     requires:
+      #       - deploy-backend
+      #       - deploy-frontend
+      #     filters:
+      #       branches:
+      #         only: master
+      # - cloudfront-update:
+      #     requires:
+      #       - smoke-test
+      #     filters:
+      #       branches:
+      #         only: master
