@@ -87,7 +87,7 @@ jobs:
             npm run build
       - save_cache:
           paths:
-            - backend/node_modules
+            - backend
           key: |
             backend-build
       # - run:
@@ -168,7 +168,7 @@ jobs:
           template: basic_fail_1
       - save_cache:
           paths:
-            - backend/node_modules
+            - backend 
           key: backend-build
 
   deploy-infrastructure:
@@ -273,7 +273,7 @@ jobs:
             fi
       - save_cache:
           paths:
-            - backend/node_modules
+            - backend
           key: backend-build
 
   deploy-frontend:
@@ -473,65 +473,65 @@ jobs:
 workflows:
   default:
     jobs:
-      # - build-frontend
+      - build-frontend
       - build-backend
-      # - test-frontend:
-      #     requires:
-      #       - build-frontend
-      # - test-backend:
-          # requires:
-          #   - build-backend
+      - test-frontend:
+          requires:
+            - build-frontend
+      - test-backend:
+          requires:
+            - build-backend
       - scan-backend:
           requires: 
             - build-backend
-      # - scan-frontend:
-      #     requires: 
-      #       - build-frontend
-      # - deploy-infrastructure:
-      #     requires:
-      #       # - build-frontend
-      #       # - build-backend
-      #       - test-frontend
-      #       - test-backend
-      #       - scan-frontend
-      #       - scan-backend
-      #     filters:
-      #       branches:
-      #         only: master
-      # - configure-infrastructure:
-      #     requires:
-      #       - deploy-infrastructure
-      #     filters:
-      #       branches:
-      #         only: master
-      # - run-migrations:
-      #     requires:
-      #       - configure-infrastructure
-      #     filters:
-      #       branches:
-      #         only: master
-      # - deploy-frontend:
-      #     requires:
-      #       - run-migrations
-      #     filters:
-      #       branches:
-      #         only: master
-      # - deploy-backend:
-      #     requires:
-      #       - run-migrations
-      #     filters:
-      #       branches:
-      #         only: master
-      # - smoke-test:
-      #     requires:
-      #       - deploy-backend
-      #       - deploy-frontend
-      #     filters:
-      #       branches:
-      #         only: master
-      # - cloudfront-update:
-      #     requires:
-      #       - smoke-test
-      #     filters:
-      #       branches:
-      #         only: master
+      - scan-frontend:
+          requires: 
+            - build-frontend
+      - deploy-infrastructure:
+          requires:
+            # - build-frontend
+            # - build-backend
+            - test-frontend
+            - test-backend
+            - scan-frontend
+            - scan-backend
+          filters:
+            branches:
+              only: master
+      - configure-infrastructure:
+          requires:
+            - deploy-infrastructure
+          filters:
+            branches:
+              only: master
+      - run-migrations:
+          requires:
+            - configure-infrastructure
+          filters:
+            branches:
+              only: master
+      - deploy-frontend:
+          requires:
+            - run-migrations
+          filters:
+            branches:
+              only: master
+      - deploy-backend:
+          requires:
+            - run-migrations
+          filters:
+            branches:
+              only: master
+      - smoke-test:
+          requires:
+            - deploy-backend
+            - deploy-frontend
+          filters:
+            branches:
+              only: master
+      - cloudfront-update:
+          requires:
+            - smoke-test
+          filters:
+            branches:
+              only: master
