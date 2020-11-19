@@ -152,6 +152,9 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "4d:b3:e9:7f:f7:fd:ea:a4:7d:08:86:b6:e7:fc:8d:f1"
       - restore_cache:
           keys:
             - backend-build
